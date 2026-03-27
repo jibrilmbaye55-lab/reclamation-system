@@ -2,7 +2,6 @@ from flask import Flask, render_template, request, redirect, session, send_file
 import sqlite3
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
-from reportlab.platypus import SimpleDocTemplate, Table
 import qrcode
 import os
 import io
@@ -59,30 +58,11 @@ def init_db():
 
 
 # =========================
-# 🔥 UPDATE DB
-# =========================
-def update_db():
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
-
-    try:
-        cursor.execute("ALTER TABLE reclamations ADD COLUMN reponse TEXT")
-    except:
-        pass
-
-    conn.commit()
-    conn.close()
-
-
-# =========================
-# 📲 QR CODE (PRO VERSION)
+# 📲 QR CODE
 # =========================
 @app.route("/qr")
 def generate_qr():
-    # 🔥 URL automatique (Render ou local)
     url = request.host_url.rstrip("/")
-
-    # Génération QR en mémoire (plus pro)
     img = qrcode.make(url)
 
     buffer = io.BytesIO()
@@ -148,12 +128,14 @@ def submit():
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
 
+    telephone = request.form.get("telephone") or "Non renseigné"
+
     cursor.execute("""
     INSERT INTO reclamations (nom, telephone, type, service, message, urgence, date)
     VALUES (?, ?, ?, ?, ?, ?, ?)
     """, (
         request.form.get("nom"),
-        request.form.get("telephone"),
+        telephone,
         request.form.get("type"),
         request.form.get("service"),
         request.form.get("message"),
@@ -165,6 +147,25 @@ def submit():
     conn.close()
 
     return redirect("/")
+
+
+# =========================
+# 🔥 UPDATE STATUT
+# =========================
+@app.route("/update_status/<int:id>/<status>")
+def update_status(id, status):
+    if not session.get("logged_in"):
+        return redirect("/login")
+
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+
+    cursor.execute("UPDATE reclamations SET statut=? WHERE id=?", (status, id))
+
+    conn.commit()
+    conn.close()
+
+    return redirect("/admin")
 
 
 # =========================
@@ -189,21 +190,11 @@ def reply(id):
     msg = message.lower()
 
     if "retard" in msg:
-        reponse = "Votre demande a été prise en compte. Nous traitons le retard signalé."
-    elif "erreur" in msg:
-        reponse = "Votre demande a été prise en compte. Une vérification est en cours."
-    elif "résultat" in msg or "note" in msg:
-        reponse = "Votre demande a été prise en compte. Les résultats sont en cours de traitement."
-    elif "paiement" in msg:
-        reponse = "Votre demande a été prise en compte. Le service financier vérifie votre situation."
+        reponse = "Retard pris en compte."
     else:
-        reponse = "Votre demande a été prise en compte avec succès. Merci pour votre confiance."
+        reponse = "Demande reçue avec succès."
 
-    cursor.execute("""
-        UPDATE reclamations
-        SET reponse=?, statut='Traité'
-        WHERE id=?
-    """, (reponse, id))
+    cursor.execute("UPDATE reclamations SET reponse=?, statut='Traité' WHERE id=?", (reponse, id))
 
     conn.commit()
     conn.close()
@@ -234,26 +225,6 @@ def admin():
     cursor.execute("SELECT COUNT(*) FROM reclamations WHERE statut='Traité'")
     traite = cursor.fetchone()[0]
 
-    cursor.execute("""
-    SELECT date(date), COUNT(*)
-    FROM reclamations
-    GROUP BY date(date)
-    ORDER BY date(date)
-    """)
-    evolution = cursor.fetchall()
-    dates = [row[0] for row in evolution]
-    counts = [row[1] for row in evolution]
-
-    cursor.execute("""
-    SELECT strftime('%Y-%m', date), COUNT(*)
-    FROM reclamations
-    GROUP BY 1
-    ORDER BY 1
-    """)
-    monthly = cursor.fetchall()
-    months = [row[0] for row in monthly]
-    monthly_counts = [row[1] for row in monthly]
-
     cursor.execute("SELECT * FROM reclamations ORDER BY id DESC")
     data = cursor.fetchall()
 
@@ -265,20 +236,15 @@ def admin():
         total=total,
         attente=attente,
         encours=encours,
-        traite=traite,
-        dates=dates,
-        counts=counts,
-        months=months,
-        monthly_counts=monthly_counts
+        traite=traite
     )
 
 
 # =========================
-# 🚀 RUN (PRODUCTION READY)
+# 🚀 RUN
 # =========================
 if __name__ == "__main__":
     init_db()
-    update_db()
 
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
