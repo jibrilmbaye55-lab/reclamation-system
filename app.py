@@ -5,6 +5,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from reportlab.platypus import SimpleDocTemplate, Table
 import qrcode
 import os
+import io
 
 app = Flask(__name__)
 app.secret_key = "secret123"
@@ -44,6 +45,7 @@ def init_db():
     )
     """)
 
+    # ADMIN
     cursor.execute("SELECT * FROM users WHERE username='admin'")
     if not cursor.fetchone():
         password_hash = generate_password_hash("admin123")
@@ -73,18 +75,21 @@ def update_db():
 
 
 # =========================
-# 📲 QR CODE (AUTO URL RENDER)
+# 📲 QR CODE (PRO VERSION)
 # =========================
 @app.route("/qr")
 def generate_qr():
-    url = request.host_url  # 🔥 AUTO (Render ou local)
+    # 🔥 URL automatique (Render ou local)
+    url = request.host_url.rstrip("/")
 
+    # Génération QR en mémoire (plus pro)
     img = qrcode.make(url)
 
-    file_path = "qr_reclamation.png"
-    img.save(file_path)
+    buffer = io.BytesIO()
+    img.save(buffer, format="PNG")
+    buffer.seek(0)
 
-    return send_file(file_path, as_attachment=True)
+    return send_file(buffer, mimetype="image/png", as_attachment=True, download_name="qr_reclamation.png")
 
 
 # =========================
@@ -269,11 +274,11 @@ def admin():
 
 
 # =========================
-# 🚀 RUN (COMPATIBLE RENDER)
+# 🚀 RUN (PRODUCTION READY)
 # =========================
 if __name__ == "__main__":
     init_db()
     update_db()
 
-    port = int(os.environ.get("PORT", 5000))  # 🔥 IMPORTANT
+    port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
