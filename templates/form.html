@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Réclamation</title>
+
+    <style>
+        body {
+            font-family: Arial;
+            background: #f4f6f9;
+            margin: 0;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 40px auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 2px 8px rgba(0,0,0,0.1);
+        }
+
+        h2 {
+            text-align: center;
+        }
+
+        label {
+            font-weight: bold;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #2980b9;
+        }
+
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h2>📝 Déposer une réclamation</h2>
+
+<form method="POST" action="/submit">
+
+    <label>Nom (optionnel):</label>
+    <input type="text" name="nom" placeholder="Votre nom">
+
+    <label>Téléphone (optionnel):</label>
+    <input type="tel" name="telephone" placeholder="Ex: 77 123 45 67">
+
+    <label>Type :</label>
+    <select name="type">
+        <option>Étudiant</option>
+        <option>Patient</option>
+        <option>Personnel</option>
+    </select>
+
+    <label>Service :</label>
+    <select name="service">
+        <option>Laboratoire</option>
+        <option>Accueil</option>
+        <option>Urgence</option>
+        <option>Administration</option>
+    </select>
+
+    <label>Message :</label>
+    <textarea name="message" required placeholder="Décrivez votre problème..."></textarea>
+
+    <label>Urgence :</label>
+    <select name="urgence">
+        <option>Faible</option>
+        <option>Moyenne</option>
+        <option>Élevée</option>
+    </select>
+
+    <button type="submit">📩 Envoyer la réclamation</button>
+
+</form>
+
+</div>
+
+</body>
+</html>
