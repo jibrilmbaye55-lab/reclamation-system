@@ -4,6 +4,7 @@ from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from reportlab.platypus import SimpleDocTemplate, Table
 import qrcode
+import os
 
 app = Flask(__name__)
 app.secret_key = "secret123"
@@ -72,12 +73,11 @@ def update_db():
 
 
 # =========================
-# 📲 QR CODE (FIX IP)
+# 📲 QR CODE (AUTO URL RENDER)
 # =========================
 @app.route("/qr")
 def generate_qr():
-    # 🔥 TON IP FIXE (IMPORTANT)
-    url = "http://10.57.238.158:5000/"
+    url = request.host_url  # 🔥 AUTO (Render ou local)
 
     img = qrcode.make(url)
 
@@ -269,9 +269,11 @@ def admin():
 
 
 # =========================
-# 🚀 RUN
+# 🚀 RUN (COMPATIBLE RENDER)
 # =========================
 if __name__ == "__main__":
     init_db()
     update_db()
-    app.run(host="0.0.0.0", port=5000, debug=True)
+
+    port = int(os.environ.get("PORT", 5000))  # 🔥 IMPORTANT
+    app.run(host="0.0.0.0", port=port)
